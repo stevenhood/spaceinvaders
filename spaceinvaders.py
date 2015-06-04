@@ -7,8 +7,11 @@
 # Python 2.7.3
 # Pygame 1.9.1 (release)
 
-import pygame, sys, random
+import pygame
+import sys
+import random
 from pygame.sprite import Sprite
+
 pygame.init()
 random.seed()
 
@@ -28,7 +31,6 @@ class Bullet(Sprite):
 		self.rect.move_ip(0, self.direction)
 
 class Enemy(Sprite):
-
 	names = {
 		'enemy1': 'images/enemy1.png',
 		'enemy2': 'images/enemy2.png',
@@ -54,7 +56,6 @@ class Enemy(Sprite):
 		self.rect.move_ip(self.direction, y)
 
 class Shield(Sprite):
-
 	shieldImages = {
 		6: 'images/shield6.png',
 		5: 'images/shield5.png',
@@ -79,7 +80,6 @@ class Shield(Sprite):
 		return True
 
 class Ship(Sprite):
-
 	points = {
 		'enemy1': 10,
 		'enemy2': 20,
@@ -92,7 +92,6 @@ class Ship(Sprite):
 		self.image = pygame.image.load('images/ship.png').convert()
 		self.rect = self.image.get_rect()
 		self.rect.center = (x, y)
-
 		self.screen = screen
 		self.score = score
 		self.bullets = pygame.sprite.Group([])
@@ -101,23 +100,22 @@ class Ship(Sprite):
 		self.shields = pygame.sprite.Group([])
 		self.boss = False
 		self.difficulty = difficulty
-
 		self.newGame()
+
 	def update(self):
 		for enemy in self.enemies:
 
 			# If any one of the invaders reaches the bottom, the game ends
 			if enemy.rect.centery > winHeight:
 				die(self.screen, self.score.score)
+				return
 
 			# Enemies fire randomly (probability increase after each wave, see main())
 			if random.randint(1, self.difficulty) == 1:
 				self.ebullets.add(Bullet(enemy.rect.center, 10))
-				"""
-				if not muted:
-					pygame.mixer.music.load('sounds/shoot.wav')
-					pygame.mixer.music.play()
-				"""
+				# if not muted:
+				# 	pygame.mixer.music.load('sounds/shoot.wav')
+				# 	pygame.mixer.music.play()
 
 			for bullet in self.bullets:
 				# Destroy bullet sprites that have left the top of the screen
@@ -135,17 +133,19 @@ class Ship(Sprite):
 						self.boss = False
 					self.enemies.remove(enemy)
 					self.bullets.remove(bullet)
-
 					if not muted:
 						pygame.mixer.music.load('sounds/invaderkilled.wav')
 						pygame.mixer.music.play()
 					#print "enemy killed"
+					continue
 
+				# Test bullet collisions with shields
 				for shield in self.shields:
 					if bullet.rect.colliderect(shield.rect):
 						self.bullets.remove(bullet)
 						if not shield.damage():
 							self.shields.remove(shield)
+							#print "shield destroyed"
 
 			for ebullet in self.ebullets:
 				# Destroy enemy bullet sprites that have left the bottom of the screen
@@ -157,7 +157,9 @@ class Ship(Sprite):
 				# If the player has been shot by an invader, the game ends
 				if ebullet.rect.colliderect(self.rect):
 					die(self.screen, self.score.score)
+					return
 
+				# Test enemy bullet collisions with shields
 				for shield in self.shields:
 					if ebullet.rect.colliderect(shield.rect):
 						self.ebullets.remove(ebullet)
@@ -184,7 +186,6 @@ class Ship(Sprite):
 	def newGame(self):
 		for shield in self.shields:
 			self.shields.remove(shield)
-
 		self.genEnemies((51, 50), 10, 'enemy3')
 		self.genEnemies((51, 100), 10, 'enemy2')
 		self.genEnemies((51, 150), 10, 'enemy2')
