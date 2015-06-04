@@ -46,7 +46,7 @@ class Enemy(Sprite):
 		self.rect.center = (x, y)
 		self.descend = descend
 		self.direction = direction
-		self.boss = (name == 'enemy4')
+		self.isBoss = (name == 'enemy4')
 
 	def update(self):
 		y = 0
@@ -81,28 +81,93 @@ class Shield(Sprite):
 
 class Ship(Sprite):
 	points = {
-		'enemy1': 10,
-		'enemy2': 20,
-		'enemy3': 40,
+		'enemy1':  10,
+		'enemy2':  20,
+		'enemy3':  40,
 		'enemy4': 150
 	}
 
-	def __init__(self, screen, score, (x, y), difficulty=1000):
+	def __init__(self, (x, y)):
 		Sprite.__init__(self)
 		self.image = pygame.image.load('images/ship.png').convert()
 		self.rect = self.image.get_rect()
 		self.rect.center = (x, y)
+		self.bullets = None
+		# self.bullets added by Game.__init__
+
+	def update(self):
+		pass
+
+	def left(self):
+		self.rect.move_ip(-10, 0)
+
+	def right(self):
+		self.rect.move_ip(10, 0)
+
+	def fire(self):
+		# only one bullet at a time
+		if len(self.bullets) < 1:
+			self.bullets.add(Bullet(self.rect.center))
+			if not muted:
+				pygame.mixer.music.load('sounds/shoot.wav')
+				pygame.mixer.music.play()
+
+class Score(Sprite):
+	def __init__(self):
+		Sprite.__init__(self)
+		self.score = 0
+		self.wave = 1
+		self.color = pygame.Color(51, 255, 0, 100)
+		self.font = pygame.font.Font('freaky-fonts_cosmic-alien/ca.ttf', 20)
+		self.render_text()
+		self.rect = self.image.get_rect()
+		self.rect.x, self.rect.y = 10, 10
+
+	def render_text(self):
+		self.image = self.font.render("Score {0}          Wave {1}".format(self.score, self.wave), True, self.color)
+
+	def increase(self, n):
+		self.score += n
+		self.render_text()
+
+class Game(object):
+	def __init__(self, ship, screen, score, difficulty=1000):
+		self.ship = ship
 		self.screen = screen
 		self.score = score
 		self.bullets = pygame.sprite.Group([])
 		self.enemies = pygame.sprite.Group([])
 		self.ebullets = pygame.sprite.Group([])
 		self.shields = pygame.sprite.Group([])
-		self.boss = False
+		self.ship.bullets = self.bullets
+		self.bossExists = False
 		self.difficulty = difficulty
 		self.newGame()
 
-	def update(self):
+	def newGame(self):
+		for shield in self.shields:
+			self.shields.remove(shield)
+
+		self.genEnemies((51, 50), 10, 'enemy3')
+		self.genEnemies((51, 100), 10, 'enemy2')
+		self.genEnemies((51, 150), 10, 'enemy2')
+		self.genEnemies((51, 200), 10, 'enemy1')
+		self.genEnemies((51, 250), 10, 'enemy1')
+		# 114, 420
+		self.genShields((150, 420), 4)
+
+	def genEnemies(self, (x, y), n, name):
+		for i in xrange(0, n):
+			self.enemies.add(Enemy((x, y), name))
+			# allow 35px of space between enemies
+			x += 35
+
+	def genShields(self, (x, y), n):
+		for i in xrange(0, n):
+			self.shields.add(Shield((x, y)))
+			x += 114
+
+	def checkCollisions(self):
 		for enemy in self.enemies:
 
 			# If any one of the invaders reaches the bottom, the game ends
@@ -129,8 +194,8 @@ class Ship(Sprite):
 				if bullet.rect.colliderect(enemy.rect):
 					self.score.increase(Ship.points[enemy.name])
 					# If the killed enemy is a boss/UFO, allow another to be randomly created
-					if enemy.boss:
-						self.boss = False
+					if enemy.isBoss:
+						self.bossExists = False
 					self.enemies.remove(enemy)
 					self.bullets.remove(bullet)
 					if not muted:
@@ -155,7 +220,7 @@ class Ship(Sprite):
 					continue
 
 				# If the player has been shot by an invader, the game ends
-				if ebullet.rect.colliderect(self.rect):
+				if ebullet.rect.colliderect(self.ship.rect):
 					die(self.screen, self.score.score)
 					return
 
@@ -167,61 +232,9 @@ class Ship(Sprite):
 							self.shields.remove(shield)
 
 		# UFO is spawned randomly, can have only one instance at a time
-		if random.randint(1, 2500) == 1250 and not self.boss:
+		if random.randint(1, 2500) == 1250 and not self.bossExists:
 			self.enemies.add(Enemy((51, 40), 'enemy4', 0))
-			self.boss = True
-
-	def left(self):
-		self.rect.move_ip(-10, 0)
-
-	def right(self):
-		self.rect.move_ip(10, 0)
-
-	def fire(self):
-		self.bullets.add(Bullet(self.rect.center))
-		if not muted:
-			pygame.mixer.music.load('sounds/shoot.wav')
-			pygame.mixer.music.play()
-
-	def newGame(self):
-		for shield in self.shields:
-			self.shields.remove(shield)
-		self.genEnemies((51, 50), 10, 'enemy3')
-		self.genEnemies((51, 100), 10, 'enemy2')
-		self.genEnemies((51, 150), 10, 'enemy2')
-		self.genEnemies((51, 200), 10, 'enemy1')
-		self.genEnemies((51, 250), 10, 'enemy1')
-		# 114, 420
-		self.genShields((150, 420), 4)
-
-	def genEnemies(self, (x, y), n, name):
-		for i in xrange(0, n):
-			self.enemies.add(Enemy((x, y), name))
-			# allow 35px of space between enemies
-			x += 35
-
-	def genShields(self, (x, y), n):
-		for i in xrange(0, n):
-			self.shields.add(Shield((x, y)))
-			x += 114
-
-class Score(Sprite):
-	def __init__(self):
-		Sprite.__init__(self)
-		self.score = 0
-		self.wave = 1
-		self.color = pygame.Color(51, 255, 0, 100)
-		self.font = pygame.font.Font('freaky-fonts_cosmic-alien/ca.ttf', 20)
-		self.render_text()
-		self.rect = self.image.get_rect()
-		self.rect.x, self.rect.y = 10, 10
-
-	def render_text(self):
-		self.image = self.font.render("Score {0}          Wave {1}".format(self.score, self.wave), True, self.color)
-
-	def increase(self, n):
-		self.score += n
-		self.render_text()
+			self.bossExists = True
 
 def die(screen, score):
 	font = pygame.font.Font('freaky-fonts_cosmic-alien/ca.ttf', 36)
@@ -255,7 +268,8 @@ def main():
 
 	clock = pygame.time.Clock()
 	score = Score()
-	ship = Ship(screen, score, (320, 450))
+	ship = Ship((320, 450))
+	game = Game(ship, screen, score)
 	sprites = pygame.sprite.Group([ship, score])
 
 	key_map = {
@@ -268,30 +282,32 @@ def main():
 	pygame.key.set_repeat(1, 50)
 
 	running = True
+	# main game loop
 	while running:
-
 		clock.tick(30)
 		pygame.display.set_caption("Space Invaders :: {0:.2f} fps".format(clock.get_fps()))
 
 		sprites.update()
-		ship.bullets.update()
-		ship.enemies.update()
-		ship.ebullets.update()
-		#ship.shields.update()
+		game.bullets.update()
+		game.enemies.update()
+		game.ebullets.update()
+		#game.shields.update()
+
+		game.checkCollisions()
 
 		sprites.draw(screen)
-		ship.bullets.draw(screen)
-		ship.enemies.draw(screen)
-		ship.ebullets.draw(screen)
-		ship.shields.draw(screen)
+		game.bullets.draw(screen)
+		game.enemies.draw(screen)
+		game.ebullets.draw(screen)
+		game.shields.draw(screen)
 
 		pygame.display.flip()
 
 		sprites.clear(screen, background)
-		ship.bullets.clear(screen, background)
-		ship.enemies.clear(screen, background)
-		ship.ebullets.clear(screen, background)
-		ship.shields.clear(screen, background)
+		game.bullets.clear(screen, background)
+		game.enemies.clear(screen, background)
+		game.ebullets.clear(screen, background)
+		game.shields.clear(screen, background)
 
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
@@ -301,12 +317,12 @@ def main():
 				#print event
 
 		# If all invaders have been destroyed, a new wave is instantiated
-		if len(ship.enemies.sprites()) < 1:
-			ship.newGame()
+		if len(game.enemies.sprites()) < 1:
+			game.newGame()
 			score.wave += 1
 			# Increase difficulty by increasing the probability of enemies shooting and UFOs spawning
-			if ship.difficulty > 50:
-				ship.difficulty -= 50
+			if game.difficulty > 50:
+				game.difficulty -= 50
 
 if __name__ == '__main__':
 	main()
