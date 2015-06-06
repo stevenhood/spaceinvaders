@@ -272,12 +272,15 @@ def main():
 	game = Game(ship, screen, score)
 	sprites = pygame.sprite.Group([ship, score])
 
+	def end():
+		sys.exit(0)
+
 	key_map = {
 		pygame.K_LEFT:   ship.left,
 		pygame.K_RIGHT:  ship.right,
 		pygame.K_SPACE:  ship.fire,
 		pygame.K_m:      setMuted,
-		pygame.K_ESCAPE: pygame.QUIT
+		pygame.K_ESCAPE: end
 	}
 	pygame.key.set_repeat(1, 50)
 
@@ -309,13 +312,6 @@ def main():
 		game.ebullets.clear(screen, background)
 		game.shields.clear(screen, background)
 
-		for event in pygame.event.get():
-			if event.type == pygame.QUIT:
-				running = False
-			elif event.type == pygame.KEYDOWN and event.key in key_map:
-				key_map[event.key]()
-				#print event
-
 		# If all invaders have been destroyed, a new wave is instantiated
 		if len(game.enemies.sprites()) < 1:
 			game.newGame()
@@ -323,6 +319,14 @@ def main():
 			# Increase difficulty by increasing the probability of enemies shooting and UFOs spawning
 			if game.difficulty > 50:
 				game.difficulty -= 50
+
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				running = False
+			elif event.type == pygame.KEYDOWN and event.key in key_map:
+				key_map[event.key]()
+				#print event
+
 
 if __name__ == '__main__':
 	main()
