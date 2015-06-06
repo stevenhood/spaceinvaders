@@ -16,7 +16,6 @@ pygame.init()
 random.seed()
 
 window = (winWidth, winHeight) = 640, 480
-muted = False
 
 class Bullet(Sprite):
 	def __init__(self, (x, y), direction=-15):
@@ -92,8 +91,9 @@ class Ship(Sprite):
 		self.image = pygame.image.load('images/ship.png').convert()
 		self.rect = self.image.get_rect()
 		self.rect.center = (x, y)
+		# Set/Added by Game.__init__
 		self.bullets = None
-		# self.bullets added by Game.__init__
+		self.muted = False
 
 	def update(self):
 		pass
@@ -108,7 +108,7 @@ class Ship(Sprite):
 		# only one bullet at a time
 		if len(self.bullets) < 1:
 			self.bullets.add(Bullet(self.rect.center))
-			if not muted:
+			if not self.muted:
 				pygame.mixer.music.load('sounds/shoot.wav')
 				pygame.mixer.music.play()
 
@@ -132,7 +132,9 @@ class Score(Sprite):
 
 class Game(object):
 	def __init__(self, ship, screen, score, difficulty=1000):
+		self.muted = False
 		self.ship = ship
+		ship.muted = self.muted
 		self.screen = screen
 		self.score = score
 		self.bullets = pygame.sprite.Group([])
@@ -143,6 +145,10 @@ class Game(object):
 		self.bossExists = False
 		self.difficulty = difficulty
 		self.newGame()
+
+	def setMuted():
+		self.muted = not self.muted
+		ship.muted = self.muted
 
 	def newGame(self):
 		for shield in self.shields:
@@ -172,13 +178,13 @@ class Game(object):
 
 			# If any one of the invaders reaches the bottom, the game ends
 			if enemy.rect.centery > winHeight:
-				die(self.screen, self.score.score)
+				self.die()
 				return
 
 			# Enemies fire randomly (probability increase after each wave, see main())
 			if random.randint(1, self.difficulty) == 1:
 				self.ebullets.add(Bullet(enemy.rect.center, 10))
-				# if not muted:
+				# if not self.muted:
 				# 	pygame.mixer.music.load('sounds/shoot.wav')
 				# 	pygame.mixer.music.play()
 
@@ -198,7 +204,7 @@ class Game(object):
 						self.bossExists = False
 					self.enemies.remove(enemy)
 					self.bullets.remove(bullet)
-					if not muted:
+					if not self.muted:
 						pygame.mixer.music.load('sounds/invaderkilled.wav')
 						pygame.mixer.music.play()
 					#print "enemy killed"
@@ -221,7 +227,7 @@ class Game(object):
 
 				# If the player has been shot by an invader, the game ends
 				if ebullet.rect.colliderect(self.ship.rect):
-					die(self.screen, self.score.score)
+					self.die()
 					return
 
 				# Test enemy bullet collisions with shields
@@ -236,28 +242,24 @@ class Game(object):
 			self.enemies.add(Enemy((51, 40), 'enemy4', 0))
 			self.bossExists = True
 
-def die(screen, score):
-	font = pygame.font.Font('freaky-fonts_cosmic-alien/ca.ttf', 36)
-	green = pygame.Color(51, 255, 0, 100)
-	red = pygame.Color(255, 0, 0, 100)
+	def die(self):
+		font = pygame.font.Font('freaky-fonts_cosmic-alien/ca.ttf', 36)
+		green = pygame.Color(51, 255, 0, 100)
+		red = pygame.Color(255, 0, 0, 100)
 
-	logo = pygame.image.load('images/logo_gameover.png').convert()
-	game_over = font.render("Game Over", True, green)
-	final_score = font.render("Final Score:", True, green)
-	scoretext = font.render(str(score), True, red)
+		logo = pygame.image.load('images/logo_gameover.png').convert()
+		game_over = font.render("Game Over", True, green)
+		final_score = font.render("Final Score:", True, green)
+		scoretext = font.render(str(self.score.score), True, red)
 
-	screen.blit(logo, (0, 0))
-	screen.blit(game_over, (200, 325))
-	screen.blit(final_score, (25, 430))
-	screen.blit(scoretext, (360, 430))
+		self.screen.blit(logo, (0, 0))
+		self.screen.blit(game_over, (200, 325))
+		self.screen.blit(final_score, (25, 430))
+		self.screen.blit(scoretext, (360, 430))
 
-	pygame.display.flip()
-	pygame.time.wait(5000)
-	sys.exit(0)
-
-def setMuted():
-	global muted
-	muted = not muted
+		pygame.display.flip()
+		pygame.time.wait(3000)
+		sys.exit(0)
 
 def main():
 	screen = pygame.display.set_mode(window)
@@ -279,7 +281,7 @@ def main():
 		pygame.K_LEFT:   ship.left,
 		pygame.K_RIGHT:  ship.right,
 		pygame.K_SPACE:  ship.fire,
-		pygame.K_m:      setMuted,
+		pygame.K_m:      game.setMuted,
 		pygame.K_ESCAPE: end
 	}
 	pygame.key.set_repeat(1, 50)
