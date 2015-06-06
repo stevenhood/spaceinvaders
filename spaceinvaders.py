@@ -37,7 +37,7 @@ class Enemy(Sprite):
 		'enemy4': 'images/enemy4.png'
 	}
 
-	def __init__(self, (x, y), name, descend=24, direction=5):
+	def __init__(self, (x, y), name, descend=24, direction=1):
 		Sprite.__init__(self)
 		self.name = name
 		self.image = pygame.image.load(Enemy.names[name]).convert()
@@ -115,8 +115,7 @@ class Ship(Sprite):
 class Score(Sprite):
 	def __init__(self):
 		Sprite.__init__(self)
-		self.score = 0
-		self.wave = 1
+		self.reset()
 		self.color = pygame.Color(51, 255, 0, 100)
 		self.font = pygame.font.Font('freaky-fonts_cosmic-alien/ca.ttf', 20)
 		self.render_text()
@@ -130,29 +129,39 @@ class Score(Sprite):
 		self.score += n
 		self.render_text()
 
+	def reset(self):
+		self.score = 0
+		self.wave = 1		
+
 class Game(object):
 	def __init__(self, ship, screen, score, difficulty=1000):
-		self.muted = False
 		self.ship = ship
-		ship.muted = self.muted
 		self.screen = screen
 		self.score = score
 		self.bullets = pygame.sprite.Group([])
 		self.enemies = pygame.sprite.Group([])
 		self.ebullets = pygame.sprite.Group([])
 		self.shields = pygame.sprite.Group([])
+
+		self.muted = False
+		ship.muted = self.muted
 		self.ship.bullets = self.bullets
 		self.bossExists = False
 		self.difficulty = difficulty
 		self.newGame()
 
-	def setMuted():
-		self.muted = not self.muted
-		ship.muted = self.muted
-
-	def newGame(self):
+	def clear(self):
+		for bullet in self.bullets:
+			self.bullets.remove(bullet)
+		for enemy in self.enemies:
+			self.enemies.remove(enemy)
+		for ebullet in self.ebullets:
+			self.ebullets.remove(ebullet)
 		for shield in self.shields:
 			self.shields.remove(shield)
+
+	def newGame(self):
+		self.clear()
 
 		self.genEnemies((51, 50), 10, 'enemy3')
 		self.genEnemies((51, 100), 10, 'enemy2')
@@ -163,15 +172,19 @@ class Game(object):
 		self.genShields((150, 420), 4)
 
 	def genEnemies(self, (x, y), n, name):
-		for i in xrange(0, n):
+		for i in range(0, n):
 			self.enemies.add(Enemy((x, y), name))
 			# allow 35px of space between enemies
 			x += 35
 
 	def genShields(self, (x, y), n):
-		for i in xrange(0, n):
+		for i in range(0, n):
 			self.shields.add(Shield((x, y)))
 			x += 114
+
+	def setMuted():
+		self.muted = not self.muted
+		ship.muted = self.muted
 
 	def checkCollisions(self):
 		for enemy in self.enemies:
