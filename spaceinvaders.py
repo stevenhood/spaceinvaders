@@ -15,7 +15,7 @@ from pygame.sprite import Sprite
 pygame.init()
 random.seed()
 
-window = (winWidth, winHeight) = 640, 480
+WINDOW_DIMENSIONS = (WINDOW_WIDTH, WINDOW_HEIGHT) = 640, 480
 
 class Bullet(Sprite):
 	def __init__(self, (x, y), direction=-15):
@@ -45,17 +45,17 @@ class Enemy(Sprite):
 		self.rect.center = (x, y)
 		self.descend = descend
 		self.direction = direction
-		self.isBoss = (name == 'enemy4')
+		self.is_boss = (name == 'enemy4')
 
 	def update(self):
 		y = 0
-		if self.rect.centerx >= (winWidth - 50) or self.rect.centerx <= 50:
+		if self.rect.centerx >= (WINDOW_WIDTH - 50) or self.rect.centerx <= 50:
 			self.direction = -self.direction
 			y = self.descend
 		self.rect.move_ip(self.direction, y)
 
 class Shield(Sprite):
-	shieldImages = {
+	shield_images = {
 		6: 'images/shield6.png',
 		5: 'images/shield5.png',
 		4: 'images/shield4.png',
@@ -66,7 +66,7 @@ class Shield(Sprite):
 
 	def __init__(self, (x, y), health=6):
 		Sprite.__init__(self)
-		self.image = pygame.image.load(Shield.shieldImages[health]).convert()
+		self.image = pygame.image.load(Shield.shield_images[health]).convert()
 		self.rect = self.image.get_rect()
 		self.rect.center = (x, y)
 		self.health = health
@@ -75,7 +75,7 @@ class Shield(Sprite):
 		self.health -= 1
 		if not self.health:
 			return False
-		self.image = pygame.image.load(Shield.shieldImages[self.health])
+		self.image = pygame.image.load(Shield.shield_images[self.health])
 		return True
 
 class Ship(Sprite):
@@ -146,9 +146,9 @@ class Game(object):
 		self.muted = False
 		ship.muted = self.muted
 		self.ship.bullets = self.bullets
-		self.bossExists = False
+		self.boss_exists = False
 		self.difficulty = difficulty
-		self.newGame()
+		self.new_game()
 
 	def clear(self):
 		for bullet in self.bullets:
@@ -160,37 +160,37 @@ class Game(object):
 		for shield in self.shields:
 			self.shields.remove(shield)
 
-	def newGame(self):
+	def new_game(self):
 		self.clear()
 
-		self.genEnemies((51, 50), 10, 'enemy3')
-		self.genEnemies((51, 100), 10, 'enemy2')
-		self.genEnemies((51, 150), 10, 'enemy2')
-		self.genEnemies((51, 200), 10, 'enemy1')
-		self.genEnemies((51, 250), 10, 'enemy1')
+		self.gen_enemies((51, 50), 10, 'enemy3')
+		self.gen_enemies((51, 100), 10, 'enemy2')
+		self.gen_enemies((51, 150), 10, 'enemy2')
+		self.gen_enemies((51, 200), 10, 'enemy1')
+		self.gen_enemies((51, 250), 10, 'enemy1')
 		# 114, 420
-		self.genShields((150, 420), 4)
+		self.gen_shields((150, 420), 4)
 
-	def genEnemies(self, (x, y), n, name):
+	def gen_enemies(self, (x, y), n, name):
 		for i in range(0, n):
 			self.enemies.add(Enemy((x, y), name))
 			# allow 35px of space between enemies
 			x += 35
 
-	def genShields(self, (x, y), n):
+	def gen_shields(self, (x, y), n):
 		for i in range(0, n):
 			self.shields.add(Shield((x, y)))
 			x += 114
 
-	def setMuted():
+	def toggle_muted():
 		self.muted = not self.muted
 		ship.muted = self.muted
 
-	def checkCollisions(self):
+	def check_collisions(self):
 		for enemy in self.enemies:
 
 			# If any one of the invaders reaches the bottom, the game ends
-			if enemy.rect.centery > winHeight:
+			if enemy.rect.centery > WINDOW_HEIGHT:
 				self.die()
 				return
 
@@ -213,8 +213,8 @@ class Game(object):
 				if bullet.rect.colliderect(enemy.rect):
 					self.score.increase(Ship.points[enemy.name])
 					# If the killed enemy is a boss/UFO, allow another to be randomly created
-					if enemy.isBoss:
-						self.bossExists = False
+					if enemy.is_boss:
+						self.boss_exists = False
 					self.enemies.remove(enemy)
 					self.bullets.remove(bullet)
 					if not self.muted:
@@ -233,7 +233,7 @@ class Game(object):
 
 			for ebullet in self.ebullets:
 				# Destroy enemy bullet sprites that have left the bottom of the screen
-				if ebullet.rect.centery > winHeight:
+				if ebullet.rect.centery > WINDOW_HEIGHT:
 					self.ebullets.remove(ebullet)
 					#print "ebullet removed"
 					continue
@@ -251,9 +251,9 @@ class Game(object):
 							self.shields.remove(shield)
 
 		# UFO is spawned randomly, can have only one instance at a time
-		if random.randint(1, 2500) == 1250 and not self.bossExists:
+		if random.randint(1, 2500) == 1250 and not self.boss_exists:
 			self.enemies.add(Enemy((51, 40), 'enemy4', 0))
-			self.bossExists = True
+			self.boss_exists = True
 
 	def die(self):
 		font = pygame.font.Font('freaky-fonts_cosmic-alien/ca.ttf', 36)
@@ -275,9 +275,9 @@ class Game(object):
 		sys.exit(0)
 
 def main():
-	screen = pygame.display.set_mode(window)
+	screen = pygame.display.set_mode(WINDOW_DIMENSIONS)
 	pygame.display.set_caption("Space Invaders")
-	background = pygame.Surface(window)
+	background = pygame.Surface(WINDOW_DIMENSIONS)
 	background.fill(pygame.Color(0, 0, 0, 100))
 	screen.blit(background, (0, 0))
 
@@ -294,7 +294,7 @@ def main():
 		pygame.K_LEFT:   ship.left,
 		pygame.K_RIGHT:  ship.right,
 		pygame.K_SPACE:  ship.fire,
-		pygame.K_m:      game.setMuted,
+		pygame.K_m:      game.toggle_muted,
 		pygame.K_ESCAPE: end
 	}
 	pygame.key.set_repeat(1, 50)
@@ -311,7 +311,7 @@ def main():
 		game.ebullets.update()
 		#game.shields.update()
 
-		game.checkCollisions()
+		game.check_collisions()
 
 		sprites.draw(screen)
 		game.bullets.draw(screen)
@@ -329,7 +329,7 @@ def main():
 
 		# If all invaders have been destroyed, a new wave is instantiated
 		if len(game.enemies.sprites()) < 1:
-			game.newGame()
+			game.new_game()
 			score.wave += 1
 			# Increase difficulty by increasing the probability of enemies shooting and UFOs spawning
 			if game.difficulty > 50:
