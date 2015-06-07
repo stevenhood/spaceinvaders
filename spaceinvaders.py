@@ -95,9 +95,6 @@ class Ship(Sprite):
 		self.bullets = None
 		self.muted = False
 
-	def update(self):
-		pass
-
 	def left(self):
 		self.rect.move_ip(-10, 0)
 
@@ -123,7 +120,7 @@ class Score(Sprite):
 		self.rect.x, self.rect.y = 10, 10
 
 	def render_text(self):
-		self.image = self.font.render("Score {0}          Wave {1}".format(self.score, self.wave), True, self.color)
+		self.image = self.font.render('Score {0}          Wave {1}'.format(self.score, self.wave), True, self.color)
 
 	def increase(self, n):
 		self.score += n
@@ -187,69 +184,76 @@ class Game(object):
 		ship.muted = self.muted
 
 	def check_collisions(self):
+		self.check_ebullets()
 		for enemy in self.enemies:
+			self.check_enemy(enemy)
+			self.check_bullets(enemy)
 
-			# If any one of the invaders reaches the bottom, the game ends
-			if enemy.rect.centery > WINDOW_HEIGHT:
+	def check_enemy(self, enemy):
+		# If any one of the invaders reaches the bottom, the game ends
+		if enemy.rect.centery > WINDOW_HEIGHT:
+			self.die()
+			return
+
+		# Enemies fire randomly (probability increase after each wave, see main())
+		if random.randint(1, self.difficulty) == 1:
+			self.ebullets.add(Bullet(enemy.rect.center, 10))
+			# if not self.muted:
+			# 	pygame.mixer.music.load('sounds/shoot.wav')
+			# 	pygame.mixer.music.play()
+
+	def check_bullets(self, enemy):
+		for bullet in self.bullets:
+			# Destroy bullet sprites that have left the top of the screen
+			if bullet.rect.centery < 0:
+				self.bullets.remove(bullet)
+				#print 'bullet removed'
+				continue
+
+			# If the player has shot an invader, destroy the colliding 
+			# bullet and enemy sprites and increase the score
+			if bullet.rect.colliderect(enemy.rect):
+				self.score.increase(Ship.points[enemy.name])
+				# If the killed enemy is a boss/UFO, allow another to be randomly created
+				if enemy.is_boss:
+					self.boss_exists = False
+				self.enemies.remove(enemy)
+				self.bullets.remove(bullet)
+				if not self.muted:
+					pygame.mixer.music.load('sounds/invaderkilled.wav')
+					pygame.mixer.music.play()
+				#print 'enemy killed'
+				continue
+
+			# Test bullet collisions with shields
+			for shield in self.shields:
+				if bullet.rect.colliderect(shield.rect):
+					self.bullets.remove(bullet)
+					if not shield.damage():
+						self.shields.remove(shield)
+						#print 'shield destroyed'
+
+	def check_ebullets(self):
+		for ebullet in self.ebullets:
+			# Destroy enemy bullet sprites that have left the bottom of the screen
+			if ebullet.rect.centery > WINDOW_HEIGHT:
+				self.ebullets.remove(ebullet)
+				#print 'ebullet removed'
+				continue
+
+			# If the player has been shot by an invader, the game ends
+			if ebullet.rect.colliderect(self.ship.rect):
 				self.die()
 				return
 
-			# Enemies fire randomly (probability increase after each wave, see main())
-			if random.randint(1, self.difficulty) == 1:
-				self.ebullets.add(Bullet(enemy.rect.center, 10))
-				# if not self.muted:
-				# 	pygame.mixer.music.load('sounds/shoot.wav')
-				# 	pygame.mixer.music.play()
-
-			for bullet in self.bullets:
-				# Destroy bullet sprites that have left the top of the screen
-				if bullet.rect.centery < 0:
-					self.bullets.remove(bullet)
-					#print "bullet removed"
-					continue
-
-				# If the player has shot an invader, destroy the colliding 
-				# bullet and enemy sprites and increase the score
-				if bullet.rect.colliderect(enemy.rect):
-					self.score.increase(Ship.points[enemy.name])
-					# If the killed enemy is a boss/UFO, allow another to be randomly created
-					if enemy.is_boss:
-						self.boss_exists = False
-					self.enemies.remove(enemy)
-					self.bullets.remove(bullet)
-					if not self.muted:
-						pygame.mixer.music.load('sounds/invaderkilled.wav')
-						pygame.mixer.music.play()
-					#print "enemy killed"
-					continue
-
-				# Test bullet collisions with shields
-				for shield in self.shields:
-					if bullet.rect.colliderect(shield.rect):
-						self.bullets.remove(bullet)
-						if not shield.damage():
-							self.shields.remove(shield)
-							#print "shield destroyed"
-
-			for ebullet in self.ebullets:
-				# Destroy enemy bullet sprites that have left the bottom of the screen
-				if ebullet.rect.centery > WINDOW_HEIGHT:
+			# Test enemy bullet collisions with shields
+			for shield in self.shields:
+				if ebullet.rect.colliderect(shield.rect):
 					self.ebullets.remove(ebullet)
-					#print "ebullet removed"
-					continue
+					if not shield.damage():
+						self.shields.remove(shield)
 
-				# If the player has been shot by an invader, the game ends
-				if ebullet.rect.colliderect(self.ship.rect):
-					self.die()
-					return
-
-				# Test enemy bullet collisions with shields
-				for shield in self.shields:
-					if ebullet.rect.colliderect(shield.rect):
-						self.ebullets.remove(ebullet)
-						if not shield.damage():
-							self.shields.remove(shield)
-
+	def random_ufo_spawn(self):
 		# UFO is spawned randomly, can have only one instance at a time
 		if random.randint(1, 2500) == 1250 and not self.boss_exists:
 			self.enemies.add(Enemy((51, 40), 'enemy4', 0))
@@ -261,8 +265,8 @@ class Game(object):
 		red = pygame.Color(255, 0, 0, 100)
 
 		logo = pygame.image.load('images/logo_gameover.png').convert()
-		game_over = font.render("Game Over", True, green)
-		final_score = font.render("Final Score:", True, green)
+		game_over = font.render('Game Over', True, green)
+		final_score = font.render('Final Score:', True, green)
 		scoretext = font.render(str(self.score.score), True, red)
 
 		self.screen.blit(logo, (0, 0))
@@ -276,7 +280,7 @@ class Game(object):
 
 def main():
 	screen = pygame.display.set_mode(WINDOW_DIMENSIONS)
-	pygame.display.set_caption("Space Invaders")
+	pygame.display.set_caption('Space Invaders')
 	background = pygame.Surface(WINDOW_DIMENSIONS)
 	background.fill(pygame.Color(0, 0, 0, 100))
 	screen.blit(background, (0, 0))
@@ -303,7 +307,7 @@ def main():
 	# main game loop
 	while running:
 		clock.tick(30)
-		pygame.display.set_caption("Space Invaders :: {0:.2f} fps".format(clock.get_fps()))
+		pygame.display.set_caption('Space Invaders :: {0:.2f} fps'.format(clock.get_fps()))
 
 		sprites.update()
 		game.bullets.update()
@@ -312,6 +316,7 @@ def main():
 		#game.shields.update()
 
 		game.check_collisions()
+		game.random_ufo_spawn()
 
 		sprites.draw(screen)
 		game.bullets.draw(screen)
