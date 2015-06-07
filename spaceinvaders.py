@@ -109,26 +109,26 @@ class Ship(Sprite):
 				pygame.mixer.music.load('sounds/shoot.wav')
 				pygame.mixer.music.play()
 
-class Score(Sprite):
-	def __init__(self):
+class Text(Sprite):
+	def __init__(self, x, y, text):
 		Sprite.__init__(self)
-		self.reset()
-		self.color = pygame.Color(51, 255, 0, 100)
+		self.text = text
+		self.reset_score()
+		self.color = pygame.Color(51, 255, 0, 100) # Green
 		self.font = pygame.font.Font('freaky-fonts_cosmic-alien/ca.ttf', 20)
 		self.render_text()
 		self.rect = self.image.get_rect()
-		self.rect.x, self.rect.y = 10, 10
+		self.rect.x, self.rect.y = x, y
+
+	def reset_score(self):
+		self.score = 0
 
 	def render_text(self):
-		self.image = self.font.render('Score {0}          Wave {1}'.format(self.score, self.wave), True, self.color)
+		self.image = self.font.render(self.text.format(self.score), True, self.color)
 
 	def increase(self, n):
 		self.score += n
 		self.render_text()
-
-	def reset(self):
-		self.score = 0
-		self.wave = 1		
 
 class Game(object):
 	def __init__(self, ship, screen, score, difficulty=1000):
@@ -286,10 +286,11 @@ def main():
 	screen.blit(background, (0, 0))
 
 	clock = pygame.time.Clock()
-	score = Score()
+	score = Text(10, 10, 'Score {0}')
+	wave = Text(WINDOW_WIDTH - 100, 10, 'Wave {0}')
 	ship = Ship((320, 450))
 	game = Game(ship, screen, score)
-	sprites = pygame.sprite.Group([ship, score])
+	sprites = pygame.sprite.Group([ship, score, wave])
 
 	def end():
 		sys.exit(0)
@@ -335,7 +336,7 @@ def main():
 		# If all invaders have been destroyed, a new wave is instantiated
 		if len(game.enemies.sprites()) < 1:
 			game.new_game()
-			score.wave += 1
+			wave.increase(1)
 			# Increase difficulty by increasing the probability of enemies shooting and UFOs spawning
 			if game.difficulty > 50:
 				game.difficulty -= 50
