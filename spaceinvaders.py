@@ -145,6 +145,7 @@ class Game(object):
 		self.ship.bullets = self.bullets
 		self.boss_exists = False
 		self.difficulty = difficulty
+		self.max_ebullets = 1
 		self.new_game()
 
 	def clear(self):
@@ -195,8 +196,9 @@ class Game(object):
 			self.die()
 			return
 
+		# Can have at most self.max_ebullets enemy bullets on screen at a time
 		# Enemies fire randomly (probability increase after each wave, see main())
-		if random.randint(1, self.difficulty) == 1:
+		if len(self.ebullets) < self.max_ebullets and random.randint(1, self.difficulty) == 1:
 			self.ebullets.add(Bullet(enemy.rect.center, 10))
 			# if not self.muted:
 			# 	pygame.mixer.music.load('sounds/shoot.wav')
