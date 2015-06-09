@@ -110,9 +110,10 @@ class Ship(Sprite):
 				pygame.mixer.music.play()
 
 class Text(Sprite):
-	def __init__(self, x, y, text):
+	def __init__(self, x, y, text, init_val):
 		Sprite.__init__(self)
 		self.text = text
+		self.init_val = init_val
 		self.reset_score()
 		self.color = pygame.Color(51, 255, 0, 100) # Green
 		self.font = pygame.font.Font('freaky-fonts_cosmic-alien/ca.ttf', 20)
@@ -121,7 +122,7 @@ class Text(Sprite):
 		self.rect.x, self.rect.y = x, y
 
 	def reset_score(self):
-		self.score = 0
+		self.score = self.init_val
 
 	def render_text(self):
 		self.image = self.font.render(self.text.format(self.score), True, self.color)
@@ -289,8 +290,8 @@ def main():
 	screen.blit(background, (0, 0))
 
 	clock = pygame.time.Clock()
-	score = Text(10, 10, 'Score {0}')
-	wave = Text(WINDOW_WIDTH - 100, 10, 'Wave {0}')
+	score = Text(10, 10, 'Score {0}', 0)
+	wave = Text(WINDOW_WIDTH - 100, 10, 'Wave {0}', 1)
 	ship = Ship((320, 450))
 	game = Game(ship, screen, score)
 	sprites = pygame.sprite.Group([ship, score, wave])
