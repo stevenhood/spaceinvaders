@@ -281,6 +281,7 @@ class Game(object):
 		sys.exit(0)
 
 def main():
+	pygame.display.set_icon(pygame.image.load('images/icon.ico'))
 	screen = pygame.display.set_mode(WINDOW_DIMENSIONS)
 	pygame.display.set_caption('Space Invaders')
 	background = pygame.Surface(WINDOW_DIMENSIONS)
